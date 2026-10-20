@@ -1,0 +1,710 @@
+
+<!DOCTYPE html>
+<html lang="fr">
+
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Discothèque — Ton univers musical</title>
+
+<style>
+:root {
+  --fond: #17131f;
+  --carte: #282033;
+  --rose: #f08be9;
+  --texte: #fff7ff;
+  --secondaire: #c9b8d3;
+  --bordure: #493653;
+}
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: radial-gradient(ellipse at top right, #50305e, transparent 50%), var(--fond);
+  color: var(--texte);
+  font-family: Arial, sans-serif;
+  min-height: 100vh;
+}
+header {
+  padding: 22px 5%;
+  border-bottom: 1px solid var(--bordure);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.logo {
+  font-size: 23px;
+  font-weight: 900;
+  color: var(--rose);
+}
+button, input { font: inherit; }
+button {
+  border: 1px solid var(--bordure);
+  background: #382942;
+  color: white;
+  padding: 11px 15px;
+  border-radius: 12px;
+  cursor: pointer;
+}
+button:hover { border-color: var(--rose); }
+button:disabled { opacity: .5; cursor: wait; }
+.principal {
+  max-width: 1250px;
+  margin: auto;
+  padding: 45px 22px;
+}
+.surtitre {
+  color: var(--rose);
+  font-size: 12px;
+  letter-spacing: 3px;
+  font-weight: bold;
+}
+h1 { font-size: clamp(32px, 5vw, 54px); margin: 12px 0; }
+.muted { color: var(--secondaire); line-height: 1.6; }
+.search {
+  display: flex;
+  gap: 10px;
+  margin: 25px 0 14px;
+}
+input {
+  min-width: 0;
+  flex: 1;
+  padding: 16px;
+  border-radius: 13px;
+  border: 1px solid #70577c;
+  background: #241b2e;
+  color: white;
+  outline: none;
+}
+input:focus { border-color: var(--rose); }
+.primary {
+  background: var(--rose);
+  color: #28152c;
+  border-color: var(--rose);
+  font-weight: bold;
+}
+.actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 15px 0;
+}
+.status { color: var(--secondaire); min-height: 24px; }
+h2 { margin-top: 35px; font-size: 22px; }
+.albums {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(175px, 1fr));
+  gap: 17px;
+  margin-top: 20px;
+}
+.card {
+  position: relative;
+  min-width: 0;
+  background: var(--carte);
+  border: 1px solid var(--bordure);
+  border-radius: 17px;
+  padding: 10px;
+  overflow: hidden;
+}
+.cover {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: 12px;
+  background: #3b2a46;
+}
+.card h3 {
+  font-size: 15px;
+  line-height: 1.4;
+  margin: 12px 0 5px;
+  overflow-wrap: anywhere;
+}
+.card p {
+  color: var(--secondaire);
+  font-size: 13px;
+  margin: 5px 0;
+  line-height: 1.4;
+}
+.card .open {
+  width: 100%;
+  margin-top: 12px;
+  background: var(--rose);
+  color: #29162d;
+  border: 0;
+  font-weight: bold;
+}
+.heart {
+  position: absolute;
+  top: 17px;
+  right: 17px;
+  padding: 8px;
+  border-radius: 50%;
+  background: #201728dd;
+  font-size: 19px;
+}
+.detail {
+  margin-top: 25px;
+  background: #291f34;
+  border: 1px solid #775381;
+  border-radius: 20px;
+  padding: 22px;
+}
+.detail-top {
+  display: grid;
+  grid-template-columns: minmax(180px, 300px) 1fr;
+  gap: 25px;
+  margin-top: 20px;
+}
+.detail-cover {
+  width: 100%;
+  border-radius: 15px;
+}
+.detail h2 { margin-top: 5px; }
+.track {
+  padding: 13px 5px;
+  border-bottom: 1px solid var(--bordure);
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+.track-number { color: var(--rose); min-width: 24px; }
+.track-name { flex: 1; }
+.track a { color: var(--rose); text-decoration: none; }
+.hidden { display: none !important; }
+footer {
+  padding: 30px 15px;
+  text-align: center;
+  color: var(--secondaire);
+  font-size: 12px;
+}
+@media(max-width: 600px) {
+  .search { flex-direction: column; }
+  .detail-top { grid-template-columns: 1fr; }
+  .detail-cover { max-width: 280px; }
+  .albums { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .principal { padding: 28px 14px; }
+}
+</style>
+</head>
+
+<body>
+<header>
+  <div class="logo">◉ Discothèque</div>
+  <button id="homeBtn">⌂ Accueil</button>
+</header>
+
+<main class="principal">
+  <p class="surtitre">TON UNIVERS MUSICAL</p>
+  <h1>Retrouve tes albums.</h1>
+  <p class="muted">
+    Recherche tes artistes préférés, découvre les vraies pochettes
+    et construis ta collection musicale.
+  </p>
+
+  <form id="searchForm" class="search">
+    <input id="searchInput"
+      type="search"
+      placeholder="Nom d'un album ou d'un artiste..."
+      aria-label="Rechercher un album ou un artiste"
+      required>
+    <button class="primary" id="searchBtn" type="submit">
+      Rechercher
+    </button>
+  </form>
+
+  <div class="actions">
+    <button id="discoverBtn">Découvrir</button>
+    <button id="favoritesBtn">♥ Mes favoris (0)</button>
+  </div>
+
+  <p id="status" class="status" role="status" aria-live="polite">
+    Recherche un artiste ou un album pour commencer.
+  </p>
+
+  <section id="resultsSection">
+    <h2 id="resultsTitle">À découvrir</h2>
+    <div id="albums" class="albums"></div>
+  </section>
+
+  <section id="detail" class="detail hidden">
+    <button id="backBtn">← Retour aux albums</button>
+    <div id="detailContent"></div>
+  </section>
+</main>
+
+<footer>
+  Discothèque · Informations musicales et pochettes du catalogue Apple Music / iTunes.
+  <br>Les liens ouvrent le catalogue officiel.
+</footer>
+
+<script>
+const $ = id => document.getElementById(id);
+
+const input = $("searchInput");
+const status = $("status");
+const albums = $("albums");
+const detail = $("detail");
+const detailContent = $("detailContent");
+const resultsSection = $("resultsSection");
+const searchBtn = $("searchBtn");
+
+let requestNumber = 0;
+let currentAlbums = [];
+let favorites = [];
+let showingFavorites = false;
+
+try {
+  favorites = JSON.parse(localStorage.getItem("discotheque-favorites") || "[]");
+  if (!Array.isArray(favorites)) favorites = [];
+} catch {
+  favorites = [];
+}
+
+function saveFavorites() {
+  try {
+    localStorage.setItem("discotheque-favorites", JSON.stringify(favorites));
+    updateFavoritesButton();
+  } catch {
+    status.textContent = "Impossible de sauvegarder les favoris dans ce navigateur.";
+  }
+}
+
+function updateFavoritesButton() {
+  $("favoritesBtn").textContent = `♥ Mes favoris (${favorites.length})`;
+}
+
+function escapeHTML(value) {
+  return String(value ?? "").replace(/[&<>"']/g, char => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;"
+  })[char]);
+}
+
+function coverURL(item, size = "600x600bb") {
+  const url = item.artworkUrl100 || item.artworkUrl60 || "";
+  return url ? url.replace(/100x100bb|60x60bb/, size) : "";
+}
+
+function showImageError(img) {
+  img.onerror = () => {
+    img.onerror = null;
+    img.style.background = "#493653";
+    img.alt = "Pochette indisponible";
+  };
+}
+
+function jsonp(url, timeout = 15000) {
+  return new Promise((resolve, reject) => {
+    const callback = "discothequeJSONP_" +
+      Date.now() + "_" + Math.random().toString(36).slice(2);
+
+    const script = document.createElement("script");
+    let finished = false;
+
+    const timer = setTimeout(() => {
+      finish(new Error("Délai dépassé. Vérifie ta connexion Internet."));
+    }, timeout);
+
+    function finish(error, data) {
+      if (finished) return;
+      finished = true;
+      clearTimeout(timer);
+      delete window[callback];
+      script.remove();
+      if (error) reject(error);
+      else resolve(data);
+    }
+
+    window[callback] = data => finish(null, data);
+    script.onerror = () => finish(new Error(
+      "Impossible de contacter le catalogue musical."
+    ));
+
+    script.src = url + (url.includes("?") ? "&" : "?") +
+      "callback=" + encodeURIComponent(callback);
+
+    document.body.appendChild(script);
+  });
+}
+
+function formatDate(date) {
+  if (!date) return "Date inconnue";
+  const parsed = new Date(date);
+  if (Number.isNaN(parsed.getTime())) return "Date inconnue";
+  return parsed.toLocaleDateString("fr-FR", {
+    day: "2-digit", month: "2-digit", year: "numeric"
+  });
+}
+
+function renderAlbums(list) {
+  albums.replaceChildren();
+
+  if (!list.length) {
+    albums.innerHTML = "<p>Aucun album à afficher.</p>";
+    return;
+  }
+
+  list.forEach(item => {
+    const id = item.collectionId;
+    const isFavorite = favorites.some(f => f.collectionId === id);
+    const card = document.createElement("article");
+    card.className = "card";
+
+    const image = document.createElement("img");
+    image.className = "cover";
+    image.src = coverURL(item);
+    image.alt = "Pochette de " + item.collectionName;
+    image.loading = "lazy";
+    showImageError(image);
+
+    const title = document.createElement("h3");
+    title.textContent = item.collectionName || "Album sans titre";
+
+    const artist = document.createElement("p");
+    artist.textContent = item.artistName || "Artiste inconnu";
+
+    const year = document.createElement("p");
+    year.textContent = [
+      item.releaseDate ? item.releaseDate.slice(0, 4) : "",
+      item.primaryGenreName || ""
+    ].filter(Boolean).join(" · ");
+
+    const heart = document.createElement("button");
+    heart.className = "heart";
+    heart.type = "button";
+    heart.textContent = isFavorite ? "♥" : "♡";
+    heart.setAttribute("aria-label", "Ajouter ou retirer des favoris");
+
+    heart.addEventListener("click", () => toggleFavorite(item));
+
+    const open = document.createElement("button");
+    open.className = "open";
+    open.type = "button";
+    open.textContent = "Voir l'album ↗";
+    open.addEventListener("click", () => showAlbum(item));
+
+    card.append(image, heart, title, artist, year, open);
+    albums.appendChild(card);
+  });
+}
+
+function toggleFavorite(item) {
+  const exists = favorites.some(f => f.collectionId === item.collectionId);
+
+  if (exists) {
+    favorites = favorites.filter(f => f.collectionId !== item.collectionId);
+  } else {
+    favorites.push({
+      collectionId: item.collectionId,
+      collectionName: item.collectionName,
+      artistName: item.artistName,
+      artworkUrl100: item.artworkUrl100,
+      collectionViewUrl: item.collectionViewUrl,
+      releaseDate: item.releaseDate,
+      primaryGenreName: item.primaryGenreName,
+      trackCount: item.trackCount
+    });
+  }
+
+  saveFavorites();
+
+  if (showingFavorites) {
+    renderAlbums(favorites);
+  } else {
+    renderAlbums(currentAlbums);
+  }
+
+  if (!detail.classList.contains("hidden")) {
+    const id = Number(detail.dataset.id);
+    const button = detailContent.querySelector("#detailFavorite");
+    if (button && id === item.collectionId) {
+      button.textContent = favorites.some(f => f.collectionId === id)
+        ? "♥ Retirer des favoris"
+        : "♡ Ajouter aux favoris";
+    }
+  }
+}
+
+async function searchAlbums(term) {
+  const query = term.trim();
+
+  if (!query) {
+    status.textContent = "Entre le nom d'un album ou d'un artiste.";
+    return;
+  }
+
+  const myRequest = ++requestNumber;
+  showingFavorites = false;
+  detail.classList.add("hidden");
+  resultsSection.classList.remove("hidden");
+  albums.replaceChildren();
+
+  status.textContent = "Recherche en cours…";
+  $("resultsTitle").textContent = "Résultats de recherche";
+  searchBtn.disabled = true;
+
+  try {
+    const params = new URLSearchParams({
+      term: query,
+      media: "music",
+      entity: "album",
+      country: "fr",
+      limit: "50"
+    });
+
+    const data = await jsonp(
+      "https://itunes.apple.com/search?" + params.toString()
+    );
+
+    if (myRequest !== requestNumber) return;
+
+    const results = (data.results || []).filter(item =>
+      item.collectionId && item.collectionName && item.artworkUrl100
+    );
+
+    const unique = new Map();
+    results.forEach(item => unique.set(item.collectionId, item));
+
+    currentAlbums = Array.from(unique.values());
+    renderAlbums(currentAlbums);
+
+    status.textContent = currentAlbums.length
+      ? `${currentAlbums.length} album(s) trouvé(s) pour « ${query} ».`
+      : `Aucun album trouvé pour « ${query} ». Essaie un autre nom.`;
+
+  } catch (error) {
+    if (myRequest !== requestNumber) return;
+    status.textContent = error.message +
+      " Ouvre Discothèque depuis un onglet Chrome connecté à Internet.";
+  } finally {
+    if (myRequest === requestNumber) searchBtn.disabled = false;
+  }
+}
+
+async function showAlbum(item) {
+  detail.dataset.id = item.collectionId;
+  resultsSection.classList.add("hidden");
+  detail.classList.remove("hidden");
+  detailContent.innerHTML = "<p>Chargement de la fiche et des chansons…</p>";
+  status.textContent = "Ouverture de l'album…";
+
+  try {
+    const params = new URLSearchParams({
+      id: String(item.collectionId),
+      entity: "song",
+      country: "fr"
+    });
+
+    const data = await jsonp(
+      "https://itunes.apple.com/lookup?" + params.toString()
+    );
+
+    if (Number(detail.dataset.id) !== item.collectionId) return;
+
+    const tracks = (data.results || []).filter(
+      track => track.wrapperType === "track" && track.trackName
+    );
+
+    const isFavorite = favorites.some(
+      f => f.collectionId === item.collectionId
+    );
+
+    const image = coverURL(item);
+    const tracksHTML = tracks.length
+      ? tracks.map((track, index) => `
+          <div class="track">
+            <span class="track-number">${index + 1}</span>
+            <span class="track-name">${escapeHTML(track.trackName)}</span>
+            ${track.trackViewUrl
+              ? `<a href="${escapeHTML(track.trackViewUrl)}" target="_blank" rel="noopener noreferrer">Écouter ↗</a>`
+              : ""}
+          </div>
+        `).join("")
+      : "<p class='muted'>La liste des chansons n'est pas disponible pour cet album.</p>";
+
+    detailContent.innerHTML = `
+      <div class="detail-top">
+        <img class="detail-cover"
+          src="${escapeHTML(image)}"
+          alt="Pochette de ${escapeHTML(item.collectionName)}">
+        <div>
+          <p class="surtitre">FICHE DE L'ALBUM</p>
+          <h2>${escapeHTML(item.collectionName)}</h2>
+          <p>${escapeHTML(item.artistName)}</p>
+          <p class="muted">
+            Sorti le ${formatDate(item.releaseDate)}
+            · ${escapeHTML(item.primaryGenreName || "Genre inconnu")}
+            · ${tracks.length || item.trackCount || 0} titre(s)
+          </p>
+          <p class="muted">
+            Découvre les titres répertoriés dans le catalogue musical.
+          </p>
+          <div class="actions">
+            <button id="detailFavorite">
+              ${isFavorite ? "♥ Retirer des favoris" : "♡ Ajouter aux favoris"}
+            </button>
+            <a href="${escapeHTML(item.collectionViewUrl || "https://music.apple.com/fr")}"
+              target="_blank" rel="noopener noreferrer">
+              <button type="button">Ouvrir sur Apple Music ↗</button>
+            </a>
+          </div>
+        </div>
+      </div>
+      <h2>♫ Liste des chansons</h2>
+      ${tracksHTML}
+    `;
+
+    detailContent.querySelector("#detailFavorite")
+      .addEventListener("click", () => toggleFavorite(item));
+
+    showImageError(detailContent.querySelector(".detail-cover"));
+    status.textContent = "Fiche de l'album chargée.";
+
+  } catch (error) {
+    detailContent.innerHTML =
+      "<p>Impossible de charger les chansons. Vérifie ta connexion et réessaie.</p>";
+    status.textContent = error.message;
+  }
+}
+
+$("searchForm").addEventListener("submit", event => {
+  event.preventDefault();
+  searchAlbums(input.value);
+});
+
+$("discoverBtn").addEventListener("click", () => {
+  input.value = "";
+  searchAlbums("albums populaires");
+});
+
+$("favoritesBtn").addEventListener("click", () => {
+  ++requestNumber;
+  showingFavorites = true;
+  detail.classList.add("hidden");
+  resultsSection.classList.remove("hidden");
+  $("resultsTitle").textContent = "Mes albums favoris";
+  renderAlbums(favorites);
+  status.textContent = favorites.length
+    ? `${favorites.length} album(s) dans tes favoris.`
+    : "Tu n'as pas encore de favoris. Clique sur ♡ sur un album.";
+});
+
+$("backBtn").addEventListener("click", () => {
+  detail.classList.add("hidden");
+  resultsSection.classList.remove("hidden");
+});
+
+$("homeBtn").addEventListener("click", () => {
+  ++requestNumber;
+  detail.classList.add("hidden");
+  resultsSection.classList.remove("hidden");
+  showingFavorites = false;
+  $("resultsTitle").textContent = "À découvrir";
+  status.textContent = "Recherche un album ou un artiste pour commencer.";
+  albums.replaceChildren();
+  currentAlbums = [];
+  input.value = "";
+});
+
+updateFavoritesButton();
+</script>
+
+<section id="accountArea">
+  <h2>Ton espace Discothèque 🎵</h2>
+  <p id="accountStatus">Tu n'es pas connecté.</p>
+
+  <button id="googleLogin">Continuer avec Google</button>
+  <button id="appleLogin">Continuer avec Apple</button>
+  <button id="emailLogin">Se connecter avec e-mail</button>
+  <button id="logoutBtn" hidden>Se déconnecter</button>
+</section>
+
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyDTB_Z1Eu9-9tWCnjDLIWNI4Yh5PFc71jI",
+    authDomain: "discotheque-5660c.firebaseapp.com",
+    projectId: "discotheque-5660c",
+    appId: "1:1089748825132:web:31878f02c97dd033b54d89",
+  };
+
+  firebase.initializeApp(firebaseConfig);
+
+  const auth = firebase.auth();
+  const db = firebase.firestore();
+
+  const accountStatus = document.getElementById("accountStatus");
+  const googleLogin = document.getElementById("googleLogin");
+  const appleLogin = document.getElementById("appleLogin");
+  const emailLogin = document.getElementById("emailLogin");
+  const logoutBtn = document.getElementById("logoutBtn");
+
+  googleLogin.addEventListener("click", async () => {
+    try {
+      const provider = new firebase.auth.GoogleAuthProvider();
+      await auth.signInWithPopup(provider);
+    } catch (error) {
+      alert("Connexion Google impossible : " + error.message);
+    }
+  });
+
+  emailLogin.addEventListener("click", async () => {
+    const email = prompt("Ton adresse e-mail :");
+    if (!email) return;
+
+    const password = prompt("Choisis ou saisis ton mot de passe :");
+    if (!password) return;
+
+    try {
+      await auth.signInWithEmailAndPassword(email, password);
+    } catch (error) {
+      if (error.code === "auth/user-not-found" ||
+          error.code === "auth/invalid-credential") {
+        const create = confirm(
+          "Connexion impossible. Veux-tu essayer de créer un compte ?"
+        );
+        if (!create) return;
+
+        try {
+          await auth.createUserWithEmailAndPassword(email, password);
+        } catch (creationError) {
+          alert("Création impossible : " + creationError.message);
+        }
+      } else {
+        alert("Erreur : " + error.message);
+      }
+    }
+  });
+
+  logoutBtn.addEventListener("click", () => auth.signOut());
+
+  auth.onAuthStateChanged(async (user) => {
+    if (user) {
+      accountStatus.textContent = "Connecté : " + (user.email || user.displayName || "compte Apple/Google");
+      logoutBtn.hidden = false;
+      googleLogin.hidden = true;
+      appleLogin.hidden = true;
+      emailLogin.hidden = true;
+    } else {
+      accountStatus.textContent = "Tu n'es pas connecté.";
+      logoutBtn.hidden = true;
+      googleLogin.hidden = false;
+      appleLogin.hidden = false;
+      emailLogin.hidden = false;
+    }
+  });
+
+  appleLogin.addEventListener("click", () => {
+    alert("La connexion Apple nécessite une configuration supplémentaire dans Firebase et chez Apple. On la configurera ensuite.");
+  });
+</script>
+</body>
+</html>
